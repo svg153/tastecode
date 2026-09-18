@@ -66,6 +66,12 @@ mid-generation steering when those do not exist.
 - Custom endpoints require HTTPS unless they bind to `127.0.0.1`.
 - Provider-specific request fields are capability-gated transport options, not additions to
   the shared thread model.
+- Each reviewed compatible preset names its endpoint, and the transport falls back to it
+  when a connection does not override one: OpenRouter `https://openrouter.ai/api/v1`, Kimi
+  `https://api.moonshot.ai/v1`, Z.ai `https://api.z.ai/api/paas/v4`, NaN
+  `https://api.nan.builders/v1` (key `NAN_API_KEY`).
+- NaN is a LiteLLM relay that serves open-weight models and nothing else, so it is a model
+  connection, not an agent engine, and needs no vendor CLI.
 
 ## Delivery order
 
