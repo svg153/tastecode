@@ -26,9 +26,10 @@ implementation details out of shared contracts and components.
 | OpenRouter             | OpenAI-compatible API                              | TasteCode API runtime + compatible transport       |
 | Kimi API               | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
 | GLM / Z.ai API         | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
+| NaN (nan.builders)     | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
 | Custom API             | User-supplied OpenAI-compatible base URL           | TasteCode API runtime + compatible transport       |
 
-OpenRouter, Kimi and Z.ai are presets over one compatible transport, not three copied
+OpenRouter, Kimi, Z.ai and NaN are presets over one compatible transport, not four copied
 adapters. Anthropic uses its native Messages API because Anthropic documents its OpenAI
 compatibility layer as an evaluation path rather than the production interface.
 
@@ -74,7 +75,7 @@ Each line ships as a separate, short-lived PR. Shared contracts land before cons
 2. TasteCode API runtime with deterministic fake-transport tests.
 3. OpenAI Responses transport and a real local end-to-end session.
 4. Anthropic Messages transport.
-5. OpenAI-compatible transport plus OpenRouter, Kimi, Z.ai and custom presets.
+5. OpenAI-compatible transport plus OpenRouter, Kimi, Z.ai, NaN and custom presets.
 6. OpenCode native adapter against captured HTTP/SSE traffic.
 7. Cursor adapter against captured `stream-json` output.
 8. Kimi Code through ACP; GLM Coding Plan through configured OpenCode or Claude Code.

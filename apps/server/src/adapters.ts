@@ -78,7 +78,9 @@ export type StartOptions = {
  * the reviewed names get preset capabilities; everything else is `custom`.
  */
 function compatibleProviderFor(preset: StoredModelConnection['preset']): CompatibleProvider {
-  return preset === 'openrouter' || preset === 'kimi' || preset === 'zai' ? preset : 'custom'
+  return preset === 'openrouter' || preset === 'kimi' || preset === 'zai' || preset === 'nan'
+    ? preset
+    : 'custom'
 }
 
 export function apiRuntime(
