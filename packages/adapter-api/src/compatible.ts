@@ -11,7 +11,7 @@ import {
 import type { ApiMessage, ApiStreamEvent, ApiTool, ApiToolCall, ApiTransport } from './runtime.js'
 import { httpError, serverSentEvents } from './sse.js'
 
-export type CompatibleProvider = 'openrouter' | 'kimi' | 'zai' | 'custom'
+export type CompatibleProvider = 'openrouter' | 'kimi' | 'zai' | 'nan' | 'custom'
 
 export const OPENAI_COMPATIBLE_PRESETS = {
   openrouter: {
@@ -31,6 +31,13 @@ export const OPENAI_COMPATIBLE_PRESETS = {
     modelDiscovery: false,
     streamUsage: false,
     toolStream: true,
+  },
+  /** nan.builders serves open-weight models through a LiteLLM relay. */
+  nan: {
+    baseUrl: 'https://api.nan.builders/v1',
+    modelDiscovery: true,
+    streamUsage: true,
+    toolStream: false,
   },
 } as const
 

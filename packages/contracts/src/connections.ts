@@ -14,6 +14,7 @@ export const ModelConnectionPresetSchema = z.enum([
   'openrouter',
   'kimi',
   'zai',
+  'nan',
   'custom',
 ])
 export type ModelConnectionPreset = z.infer<typeof ModelConnectionPresetSchema>

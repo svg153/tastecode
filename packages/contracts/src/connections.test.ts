@@ -28,6 +28,21 @@ describe('model connections', () => {
     expect(publicConnection.credentialConfigured).toBe(true)
   })
 
+  it('accepts a reviewed relay preset for the compatible transport', () => {
+    const connection = StoredModelConnectionSchema.parse({
+      id: 'nan',
+      displayName: 'NaN',
+      preset: 'nan',
+      transport: 'openai-compatible',
+      baseUrl: 'https://api.nan.builders/v1',
+      credentialRef: 'model-connections/nan',
+      defaultModel: 'glm5.3-flash',
+      enabled: true,
+    })
+
+    expect(connection).toMatchObject({ preset: 'nan', baseUrl: 'https://api.nan.builders/v1' })
+  })
+
   it('allows HTTPS and local development endpoints but rejects remote plaintext HTTP', () => {
     expect(ModelEndpointSchema.parse('https://api.openai.com/v1')).toBe('https://api.openai.com/v1')
     expect(ModelEndpointSchema.parse('http://127.0.0.1:11434/v1')).toBe('http://127.0.0.1:11434/v1')

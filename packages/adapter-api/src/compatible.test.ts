@@ -130,13 +130,14 @@ describe('OpenAI-compatible transport', () => {
       openrouter: { baseUrl: 'https://openrouter.ai/api/v1', modelDiscovery: true },
       kimi: { baseUrl: 'https://api.moonshot.ai/v1', modelDiscovery: true },
       zai: { baseUrl: 'https://api.z.ai/api/paas/v4', modelDiscovery: false, toolStream: true },
+      nan: { baseUrl: 'https://api.nan.builders/v1', modelDiscovery: true },
     })
     await expect(
       listOpenAiCompatibleModels({ apiKey: 'test-key', provider: 'zai' }),
     ).resolves.toEqual([])
   })
 
-  it.each(['openrouter', 'kimi', 'zai'] as const)(
+  it.each(['openrouter', 'kimi', 'zai', 'nan'] as const)(
     'completes a streamed %s preset smoke session',
     async (provider) => {
       const { baseUrl, requests } = await serve([TEXT])

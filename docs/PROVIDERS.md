@@ -26,9 +26,10 @@ implementation details out of shared contracts and components.
 | OpenRouter             | OpenAI-compatible API                              | TasteCode API runtime + compatible transport       |
 | Kimi API               | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
 | GLM / Z.ai API         | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
+| NaN (nan.builders)     | OpenAI-compatible Chat Completions                 | TasteCode API runtime + compatible transport       |
 | Custom API             | User-supplied OpenAI-compatible base URL           | TasteCode API runtime + compatible transport       |
 
-OpenRouter, Kimi and Z.ai are presets over one compatible transport, not three copied
+OpenRouter, Kimi, Z.ai and NaN are presets over one compatible transport, not four copied
 adapters. Anthropic uses its native Messages API because Anthropic documents its OpenAI
 compatibility layer as an evaluation path rather than the production interface.
 
@@ -56,6 +57,46 @@ Capabilities remain honest. A direct API session can implement local resume and 
 TasteCode history, but it must not claim vendor-hosted history, subscription usage or native
 mid-generation steering when those do not exist.
 
+## Pointing an engine at another provider
+
+An agent engine brings its own coding loop, so it also brings its own model configuration.
+TasteCode does not own that file and does not rewrite it. When an engine accepts a
+third-party OpenAI-compatible endpoint, declaring the provider in the engine's own
+configuration is enough: the model list the app shows comes from the engine, not from a
+table in this repository.
+
+| Engine      | Where the provider is declared                                                                        | What TasteCode does today                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| OpenCode    | `~/.config/opencode/opencode.json`, `provider.<id>` using `@ai-sdk/openai-compatible`                 | Verified: `provider.list` marks the provider connected, so `listModels()` publishes its models                                     |
+| Pi          | `~/.pi/agent/models.json`, plus `defaultProvider` and `defaultModel` in `settings.json`               | Verified: `get_available_models` returns the provider's models, which the adapter names `<provider>/<model>`                       |
+| Codex       | `~/.codex/config.toml`, `[model_providers.<id>]` with `base_url`, `env_key`, `wire_api = "responses"` | Reads the catalogue from app-server `model/list`, which answers with the built-in OpenAI ids regardless of the configured provider |
+| Claude Code | Not directly — it speaks the Anthropic protocol, not OpenAI's                                         | No endpoint override is wired; it needs a gateway or delegation to another engine                                                  |
+
+Two details decide whether this works in practice:
+
+- **OpenCode merges configuration sources instead of replacing them.** The `mcp` block
+  TasteCode passes through `OPENCODE_CONFIG_CONTENT` is a runtime override, so a `provider`
+  entry in the user's own config survives it.
+- **The engine must list the models.** Codex 0.155.1 answers `model/list` with its five
+  built-in OpenAI ids even when `model_provider` names a custom provider, so a Codex session
+  pointed at a relay shows the wrong catalogue in the picker.
+
+Both working rows were confirmed against the CLIs themselves rather than their documentation:
+OpenCode's `/provider` answered `connected: ["opencode","nan"]` with seven models, and Pi's
+`get_available_models` RPC returned the same seven with `provider: "nan"`.
+
+Codex also moved off the chat wire format. 0.155.1 rejects `wire_api = "chat"` with
+"`wire_api = "chat"` is no longer supported", ignores the file and runs on defaults, so a
+relay only reaches Codex through `/v1/responses`. Check that route before promising Codex
+support for a given endpoint.
+
+The worked example is NaN (`https://api.nan.builders/v1`, key in `NAN_API_KEY`), which
+publishes the exact block for each tool above and ships a CLI that writes them. Its Codex
+block still shows `wire_api = "chat"` and no longer loads. The same route works for any
+relay that speaks OpenAI's format. It is not a substitute for a model connection: it
+requires the vendor CLI to be installed and configured, while the API runtime exists
+precisely for the case where no vendor CLI is present.
+
 ## Configuration and credentials
 
 - API keys live only in Windows Credential Manager or macOS Keychain.
@@ -65,6 +106,12 @@ mid-generation steering when those do not exist.
 - Custom endpoints require HTTPS unless they bind to `127.0.0.1`.
 - Provider-specific request fields are capability-gated transport options, not additions to
   the shared thread model.
+- Each reviewed compatible preset names its endpoint, and the transport falls back to it
+  when a connection does not override one: OpenRouter `https://openrouter.ai/api/v1`, Kimi
+  `https://api.moonshot.ai/v1`, Z.ai `https://api.z.ai/api/paas/v4`, NaN
+  `https://api.nan.builders/v1` (key `NAN_API_KEY`).
+- NaN is a LiteLLM relay that serves open-weight models and nothing else, so it is a model
+  connection, not an agent engine, and needs no vendor CLI.
 
 ## Delivery order
 
@@ -74,7 +121,7 @@ Each line ships as a separate, short-lived PR. Shared contracts land before cons
 2. TasteCode API runtime with deterministic fake-transport tests.
 3. OpenAI Responses transport and a real local end-to-end session.
 4. Anthropic Messages transport.
-5. OpenAI-compatible transport plus OpenRouter, Kimi, Z.ai and custom presets.
+5. OpenAI-compatible transport plus OpenRouter, Kimi, Z.ai, NaN and custom presets.
 6. OpenCode native adapter against captured HTTP/SSE traffic.
 7. Cursor adapter against captured `stream-json` output.
 8. Kimi Code through ACP; GLM Coding Plan through configured OpenCode or Claude Code.

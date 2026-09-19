@@ -1,3 +1,4 @@
+import type { CompatibleProvider } from '@harness/adapter-api'
 import type { ClaudeCodeAdapter } from '@harness/adapter-claude-code'
 import type { GrokAdapter } from '@harness/adapter-grok'
 import type {
@@ -72,6 +73,16 @@ export type StartOptions = {
   providerSessionId?: string | undefined
 }
 
+/**
+ * A connection names a reviewed provider, or points at its own endpoint. Only
+ * the reviewed names get preset capabilities; everything else is `custom`.
+ */
+function compatibleProviderFor(preset: StoredModelConnection['preset']): CompatibleProvider {
+  return preset === 'openrouter' || preset === 'kimi' || preset === 'zai' || preset === 'nan'
+    ? preset
+    : 'custom'
+}
+
 export function apiRuntime(
   connection: StoredModelConnection,
   apiKey: string,
@@ -92,12 +103,7 @@ export function apiRuntime(
             ? createAnthropicMessagesTransport({ apiKey, baseUrl: connection.baseUrl })
             : createOpenAiCompatibleTransport({
                 apiKey,
-                provider:
-                  connection.preset === 'openrouter' ||
-                  connection.preset === 'kimi' ||
-                  connection.preset === 'zai'
-                    ? connection.preset
-                    : 'custom',
+                provider: compatibleProviderFor(connection.preset),
                 baseUrl: connection.baseUrl,
               })
       const model = options.model ?? connection.defaultModel
@@ -134,12 +140,7 @@ export function apiRuntime(
       if (connection.transport === 'anthropic-messages') return listAnthropicModels(options)
       return listOpenAiCompatibleModels({
         ...options,
-        provider:
-          connection.preset === 'openrouter' ||
-          connection.preset === 'kimi' ||
-          connection.preset === 'zai'
-            ? connection.preset
-            : 'custom',
+        provider: compatibleProviderFor(connection.preset),
       })
     },
   }
