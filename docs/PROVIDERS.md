@@ -65,26 +65,37 @@ third-party OpenAI-compatible endpoint, declaring the provider in the engine's o
 configuration is enough: the model list the app shows comes from the engine, not from a
 table in this repository.
 
-| Engine      | Where the provider is declared                                                                   | What TasteCode does today                                                                                             |
-| ----------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| OpenCode    | `~/.config/opencode/opencode.json`, `provider.<id>` using `@ai-sdk/openai-compatible`            | Works unchanged: `listModels()` reads `provider.list` from the running server and keeps the connected providers       |
-| Pi          | `~/.pi/agent/models.json`, plus `defaultProvider` and `defaultModel` in `settings.json`          | Works unchanged: the adapter asks the CLI for its models over RPC                                                     |
-| Codex       | `~/.codex/config.toml`, `[model_providers.<id>]` with `base_url`, `env_key`, `wire_api = "chat"` | Reads the catalogue from app-server `model/list`; whether a custom provider advertises its models is up to app-server |
-| Claude Code | Not directly — it speaks the Anthropic protocol, not OpenAI's                                    | No endpoint override is wired; it needs a gateway or delegation to another engine                                     |
+| Engine      | Where the provider is declared                                                                        | What TasteCode does today                                                                                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| OpenCode    | `~/.config/opencode/opencode.json`, `provider.<id>` using `@ai-sdk/openai-compatible`                 | Verified: `provider.list` marks the provider connected, so `listModels()` publishes its models                                     |
+| Pi          | `~/.pi/agent/models.json`, plus `defaultProvider` and `defaultModel` in `settings.json`               | Verified: `get_available_models` returns the provider's models, which the adapter names `<provider>/<model>`                       |
+| Codex       | `~/.codex/config.toml`, `[model_providers.<id>]` with `base_url`, `env_key`, `wire_api = "responses"` | Reads the catalogue from app-server `model/list`, which answers with the built-in OpenAI ids regardless of the configured provider |
+| Claude Code | Not directly — it speaks the Anthropic protocol, not OpenAI's                                         | No endpoint override is wired; it needs a gateway or delegation to another engine                                                  |
 
 Two details decide whether this works in practice:
 
 - **OpenCode merges configuration sources instead of replacing them.** The `mcp` block
   TasteCode passes through `OPENCODE_CONFIG_CONTENT` is a runtime override, so a `provider`
   entry in the user's own config survives it.
-- **The engine must list the models.** An engine that keeps a fixed catalogue hides the
-  third-party models from the picker even when its CLI would happily use them.
+- **The engine must list the models.** Codex 0.155.1 answers `model/list` with its five
+  built-in OpenAI ids even when `model_provider` names a custom provider, so a Codex session
+  pointed at a relay shows the wrong catalogue in the picker.
+
+Both working rows were confirmed against the CLIs themselves rather than their documentation:
+OpenCode's `/provider` answered `connected: ["opencode","nan"]` with seven models, and Pi's
+`get_available_models` RPC returned the same seven with `provider: "nan"`.
+
+Codex also moved off the chat wire format. 0.155.1 rejects `wire_api = "chat"` with
+"`wire_api = "chat"` is no longer supported", ignores the file and runs on defaults, so a
+relay only reaches Codex through `/v1/responses`. Check that route before promising Codex
+support for a given endpoint.
 
 The worked example is NaN (`https://api.nan.builders/v1`, key in `NAN_API_KEY`), which
-publishes the exact block for each tool above and ships a CLI that writes them. The same
-route works for any relay that speaks OpenAI's format. It is not a substitute for a model
-connection: it requires the vendor CLI to be installed and configured, while the API runtime
-exists precisely for the case where no vendor CLI is present.
+publishes the exact block for each tool above and ships a CLI that writes them. Its Codex
+block still shows `wire_api = "chat"` and no longer loads. The same route works for any
+relay that speaks OpenAI's format. It is not a substitute for a model connection: it
+requires the vendor CLI to be installed and configured, while the API runtime exists
+precisely for the case where no vendor CLI is present.
 
 ## Configuration and credentials
 
