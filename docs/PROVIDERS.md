@@ -57,6 +57,35 @@ Capabilities remain honest. A direct API session can implement local resume and 
 TasteCode history, but it must not claim vendor-hosted history, subscription usage or native
 mid-generation steering when those do not exist.
 
+## Pointing an engine at another provider
+
+An agent engine brings its own coding loop, so it also brings its own model configuration.
+TasteCode does not own that file and does not rewrite it. When an engine accepts a
+third-party OpenAI-compatible endpoint, declaring the provider in the engine's own
+configuration is enough: the model list the app shows comes from the engine, not from a
+table in this repository.
+
+| Engine      | Where the provider is declared                                                                   | What TasteCode does today                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| OpenCode    | `~/.config/opencode/opencode.json`, `provider.<id>` using `@ai-sdk/openai-compatible`            | Works unchanged: `listModels()` reads `provider.list` from the running server and keeps the connected providers       |
+| Pi          | `~/.pi/agent/models.json`, plus `defaultProvider` and `defaultModel` in `settings.json`          | Works unchanged: the adapter asks the CLI for its models over RPC                                                     |
+| Codex       | `~/.codex/config.toml`, `[model_providers.<id>]` with `base_url`, `env_key`, `wire_api = "chat"` | Reads the catalogue from app-server `model/list`; whether a custom provider advertises its models is up to app-server |
+| Claude Code | Not directly — it speaks the Anthropic protocol, not OpenAI's                                    | No endpoint override is wired; it needs a gateway or delegation to another engine                                     |
+
+Two details decide whether this works in practice:
+
+- **OpenCode merges configuration sources instead of replacing them.** The `mcp` block
+  TasteCode passes through `OPENCODE_CONFIG_CONTENT` is a runtime override, so a `provider`
+  entry in the user's own config survives it.
+- **The engine must list the models.** An engine that keeps a fixed catalogue hides the
+  third-party models from the picker even when its CLI would happily use them.
+
+The worked example is NaN (`https://api.nan.builders/v1`, key in `NAN_API_KEY`), which
+publishes the exact block for each tool above and ships a CLI that writes them. The same
+route works for any relay that speaks OpenAI's format. It is not a substitute for a model
+connection: it requires the vendor CLI to be installed and configured, while the API runtime
+exists precisely for the case where no vendor CLI is present.
+
 ## Configuration and credentials
 
 - API keys live only in Windows Credential Manager or macOS Keychain.
